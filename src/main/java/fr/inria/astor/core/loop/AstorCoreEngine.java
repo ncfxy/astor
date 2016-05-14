@@ -23,7 +23,6 @@ import fr.inria.astor.core.entities.WeightCtElement;
 import fr.inria.astor.core.faultlocalization.IFaultLocalization;
 import fr.inria.astor.core.loop.population.PopulationController;
 import fr.inria.astor.core.loop.population.ProgramVariantFactory;
-import fr.inria.astor.core.loop.spaces.ingredients.FixIngredientSpace;
 import fr.inria.astor.core.loop.spaces.operators.RepairOperatorSpace;
 import fr.inria.astor.core.manipulation.MutationSupporter;
 import fr.inria.astor.core.manipulation.bytecode.entities.CompilationResult;
@@ -130,7 +129,7 @@ public abstract class AstorCoreEngine {
 		log.info("\n----SUMMARY_EXECUTION---");
 		if (!this.solutions.isEmpty()) {
 			log.debug("End Repair Loops: Found solution");
-			log.debug("Solution stored at: " + projectFacade.getProperties().getInDir());
+			log.debug("Solution stored at: " + projectFacade.getProperties().getWorkingDirForSource());
 
 		} else {
 			log.debug("End Repair Loops: NOT Found solution");

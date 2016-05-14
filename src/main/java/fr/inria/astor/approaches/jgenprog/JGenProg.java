@@ -96,7 +96,7 @@ public class JGenProg extends AstorCoreEngine {
 		 setFitnessOfPopulation();
 	}
 	
-	private void setFitnessOfPopulation(){
+	protected void setFitnessOfPopulation(){
 		boolean validInstance = validateInstance(originalVariant);
 		if (validInstance) {
 			throw new IllegalStateException("The application under repair has not failling test cases");
@@ -151,7 +151,7 @@ public class JGenProg extends AstorCoreEngine {
 				mutatorSupporter.getClasses().add((CtClass) ctType);
 			}
 		}
-		//Finally, we update the list of test cases (we apply a pre-process using info from Spoon Model)
+		//We do not refine the test case list using the spoon model, due we do not create the model for test any more.
 		FinderTestCases.updateRegressionTestCases(projectFacade);
 	}
 
@@ -175,16 +175,16 @@ public class JGenProg extends AstorCoreEngine {
 		this.originalVariant = variants.get(0);
 
 		if (originalVariant.getModificationPoints().isEmpty()) {
-			throw new IllegalStateException("Variant without gens. It must have at least one.");
+			throw new IllegalStateException("Variant without any modification point. It must have at least one.");
 		}
 	}
 
 	/**
-	 * This method updates gens of a variant according to a created
+	 * This method updates modification point of a variant according to a created
 	 * GenOperationInstance
 	 * 
 	 * @param variant
-	 *            variant to modify the gen information
+	 *            variant to modify the modification point information
 	 * @param operationofGen
 	 *            operator to apply in the variant.
 	 */
@@ -194,7 +194,7 @@ public class JGenProg extends AstorCoreEngine {
 	}
 
 	/**
-	 * Create a Gen Mutation for a given CtElement
+	 * Create a modification point Mutation for a given CtElement
 	 * 
 	 * @param ctElementPointed
 	 * @param className

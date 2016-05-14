@@ -40,7 +40,7 @@ public class PatchValidationTest {
 	protected Logger log = Logger.getLogger(PatchValidationTest.class.getName());
 	
 	@Test
-	//@Ignore
+	@Ignore
 	public void testPatchMath0C1() throws Exception {
 		
 		log.debug("\nInit test with one failing TC");
@@ -72,7 +72,7 @@ public class PatchValidationTest {
 		
 		main.initProject(location, projectId, dependenciespath, packageToInstrument, thfl, failing);
 
-		AstorCoreEngine astor = main.createEngine(ExecutionMode.JGenProg);
+		AstorCoreEngine astor = main.createEngine(ExecutionMode.jGenProg);
 		
 		assertTrue("Wrong engine created",astor instanceof JGenProg);
 		
@@ -151,7 +151,7 @@ public class PatchValidationTest {
 		
 		main.initProject(location, folder, dependenciespath, packageToInstrument, thfl, failing);
 
-		AstorCoreEngine astor = main.createEngine(ExecutionMode.JGenProg);
+		AstorCoreEngine astor = main.createEngine(ExecutionMode.jGenProg);
 		
 		Assert.assertEquals(1, astor.getVariants().size());
 

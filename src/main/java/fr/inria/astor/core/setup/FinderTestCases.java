@@ -72,19 +72,19 @@ public class FinderTestCases {
 	 * I analyze each model of each test to validate whether is a test or not. 
 	 */
 
-	public static List<String> refineListofRegressionTestCases(List<String> allTest) {
+	private static List<String> refineListofRegressionTestCases(List<String> allTest) {
 			List<String> regressionCases = new ArrayList<String>();
 			List<String> ignoreTestcases = retriveIgnoreTestCases();
 			
 			for (String candidateTest : allTest) {
-				CtType<?> type = MutationSupporter.getFactory().Type().get(candidateTest);
-				
+			/*	CtType<?> type = MutationSupporter.getFactory().Type().get(candidateTest);
 				if (type != null && (!type.getModifiers().contains(ModifierKind.ABSTRACT))
 						&& !(type instanceof CtInterface) 
 						&& isValidConstructor(type)
 						&& !(isIgnoredTestCase(type.getQualifiedName(), ignoreTestcases)))
-				{
-					regressionCases.add(type.getQualifiedName());
+				*/
+				if(!(isIgnoredTestCase(candidateTest, ignoreTestcases))){
+					regressionCases.add(candidateTest);
 				}
 				
 			}

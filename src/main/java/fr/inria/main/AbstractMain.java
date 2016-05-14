@@ -12,6 +12,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.UnrecognizedOptionException;
 import org.apache.log4j.Logger;
 
+import fr.inria.astor.core.loop.AstorCoreEngine;
 import fr.inria.astor.core.loop.spaces.ingredients.IngredientStrategy;
 import fr.inria.astor.core.loop.spaces.operators.AstorOperator;
 import fr.inria.astor.core.manipulation.MutationSupporter;
@@ -154,6 +155,11 @@ public abstract class AbstractMain {
 		options.addOption("ingredientstrategy", true,
 				"(Optional) Indicates the name of the class that astor calls for retrieving ingredients. They must extend from "+IngredientStrategy.class.getName() 
 				+ " The classes must be included in the classpath.");
+		
+		
+		options.addOption("customengine", true,
+				"(Optional) Indicates the class name of the execution mode. It must extend from "+AstorCoreEngine.class.getName());
+
 		
 	}
 
@@ -384,6 +390,8 @@ public abstract class AbstractMain {
 		if (cmd.hasOption("ingredientstrategy"))
 			ConfigurationProperties.properties.setProperty("ingredientstrategy", cmd.getOptionValue("ingredientstrategy"));
 
+		if(cmd.hasOption("customengine"))
+			ConfigurationProperties.properties.setProperty("customengine", cmd.getOptionValue("customengine"));
 		
 		// CLG believes, but is not totally confident in her belief, that this
 		// is a reasonable place to initialize the random number generator.
@@ -474,20 +482,16 @@ public abstract class AbstractMain {
 		}
 
 		String key = File.separator + method + "-" + projectIdentifier + File.separator;
-		String inResult = ConfigurationProperties.getProperty("workingDirectory") + key + "/src/";
-		String outResult = ConfigurationProperties.getProperty("workingDirectory") + key + "/bin/";
+		String workingDirForSource = ConfigurationProperties.getProperty("workingDirectory") + key + "/src/";
+		String workingDirForBytecode = ConfigurationProperties.getProperty("workingDirectory") + key + "/bin/";
 		String originalProjectRoot = location + File.separator;
-		// location + File.separator + projectIdentifier + File.separator;
-
-		List<String> src = determineMavenFolders(srcWithMain, originalProjectRoot);
-
+		
 		String libdir = dependencies;
 
-		// String mainClassTest = regressionTest;
-
+	
 		ProjectConfiguration properties = new ProjectConfiguration();
-		properties.setInDir(inResult);
-		properties.setOutDir(outResult);
+		properties.setWorkingDirForSource(workingDirForSource);
+		properties.setWorkingDirForBytecode(workingDirForBytecode);
 		properties.setOriginalAppBinDir(
 				originalProjectRoot + File.separator + ConfigurationProperties.getProperty("binjavafolder"));
 		properties.setOriginalTestBinDir(
@@ -495,7 +499,10 @@ public abstract class AbstractMain {
 		properties.setFixid(projectIdentifier);
 
 		properties.setOriginalProjectRootDir(originalProjectRoot);
+		
+		List<String> src = determineMavenFolders(srcWithMain, originalProjectRoot);
 		properties.setOriginalDirSrc(src);
+
 		properties.setLibPath(libdir);
 		properties.setFailingTestCases(failingTestCases);
 
