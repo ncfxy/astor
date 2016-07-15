@@ -13,8 +13,9 @@ import org.apache.commons.cli.UnrecognizedOptionException;
 import org.apache.log4j.Logger;
 
 import fr.inria.astor.core.loop.AstorCoreEngine;
-import fr.inria.astor.core.loop.spaces.ingredients.IngredientStrategy;
+import fr.inria.astor.core.loop.spaces.ingredients.IngredientSearchStrategy;
 import fr.inria.astor.core.loop.spaces.operators.AstorOperator;
+import fr.inria.astor.core.loop.spaces.operators.OperatorSelectionStrategy;
 import fr.inria.astor.core.manipulation.MutationSupporter;
 import fr.inria.astor.core.setup.ConfigurationProperties;
 import fr.inria.astor.core.setup.ProjectConfiguration;
@@ -60,7 +61,9 @@ public abstract class AbstractMain {
 
 		// Optional parameters
 		options.addOption("jvm4testexecution", true,
-				"(Optional) location of JVM that executes the mutated version of a program (Folder that contains java script, such as /bin/ ). For the examples, run jdk 6");
+				"(Optional) location of JVM that executes the mutated version of a program (Folder that contains java script, such as /bin/ ).");
+		options.addOption("jvm4evosuitetestexecution", true,
+				"(Optional) location of JVM that executes the EvoSuite test cases. If it is not specified, Astor uses that one from property 'jvm4testexecution'");
 		options.addOption("maxgen", true, "(Optional) max number of generation a program variant is evolved");
 		options.addOption("population", true,
 				"(Optional)number of population (program variants) that the approach evolves");
@@ -153,12 +156,20 @@ public abstract class AbstractMain {
 
 		
 		options.addOption("ingredientstrategy", true,
-				"(Optional) Indicates the name of the class that astor calls for retrieving ingredients. They must extend from "+IngredientStrategy.class.getName() 
+				"(Optional) Indicates the name of the class that astor calls for retrieving ingredients. They must extend from "+IngredientSearchStrategy.class.getName() 
+				+ " The classes must be included in the classpath.");
+		
+		options.addOption("opselectionstrategy", true,
+				"(Optional) Indicates the name of the class that astor calls for selecting an operator from the operator space. They must extend from "+OperatorSelectionStrategy.class.getName() 
 				+ " The classes must be included in the classpath.");
 		
 		
 		options.addOption("customengine", true,
 				"(Optional) Indicates the class name of the execution mode. It must extend from "+AstorCoreEngine.class.getName());
+
+		options.addOption("excludeRegression", false, "Exclude test regression execution");
+
+		options.addOption("ignoredtestcases", true, "Test cases to ignore");
 
 		
 	}
@@ -229,9 +240,18 @@ public abstract class AbstractMain {
 			ConfigurationProperties.properties.setProperty("jvm4testexecution", javahome);
 
 		}
+		
+		if (cmd.hasOption("jvm4evosuitetestexecution")) {
+			ConfigurationProperties.properties.setProperty("jvm4evosuitetestexecution",
+					cmd.getOptionValue("jvm4evosuitetestexecution"));
+		}else{
+			ConfigurationProperties.properties.setProperty("jvm4evosuitetestexecution", 
+					ConfigurationProperties.properties.getProperty("jvm4testexecution"));
 
+		}
+		
 		if (!ProjectConfiguration.validJDK()) {
-			System.out.println("Error: invalid jdk folder");
+			System.err.println("Error: invalid jdk folder");
 			return false;
 		}
 
@@ -390,8 +410,19 @@ public abstract class AbstractMain {
 		if (cmd.hasOption("ingredientstrategy"))
 			ConfigurationProperties.properties.setProperty("ingredientstrategy", cmd.getOptionValue("ingredientstrategy"));
 
+		if (cmd.hasOption("opselectionstrategy"))
+			ConfigurationProperties.properties.setProperty("opselectionstrategy", cmd.getOptionValue("opselectionstrategy"));
+	
 		if(cmd.hasOption("customengine"))
 			ConfigurationProperties.properties.setProperty("customengine", cmd.getOptionValue("customengine"));
+		
+		if (cmd.hasOption("excludeRegression"))
+			ConfigurationProperties.properties.setProperty("executeRegression", "false");
+
+		if (cmd.hasOption("ignoredtestcases"))
+			ConfigurationProperties.properties.setProperty("ignoredTestCases",
+					cmd.getOptionValue("ignoredtestcases"));
+
 		
 		// CLG believes, but is not totally confident in her belief, that this
 		// is a reasonable place to initialize the random number generator.
@@ -507,6 +538,8 @@ public abstract class AbstractMain {
 		properties.setFailingTestCases(failingTestCases);
 
 		properties.setPackageToInstrument(ConfigurationProperties.getProperty("packageToInstrument"));
+		
+		properties.setDataFolder(ConfigurationProperties.getProperty("resourcesfolder"));
 
 		ProjectRepairFacade ce = new ProjectRepairFacade(properties);
 

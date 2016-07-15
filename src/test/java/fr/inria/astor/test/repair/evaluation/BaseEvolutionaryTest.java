@@ -15,8 +15,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
+import fr.inria.astor.core.manipulation.MutationSupporter;
 import fr.inria.astor.core.setup.ConfigurationProperties;
-import fr.inria.main.AbstractMain;
 import spoon.support.StandardEnvironment;
 /**
  * 
@@ -27,7 +27,6 @@ public abstract class BaseEvolutionaryTest  {
 
 	public static Logger log = Logger.getLogger(Thread.currentThread().getName());
 	
-	protected AbstractMain main;
 	
 	@After
 	public void tearDown() throws Exception {
@@ -36,14 +35,12 @@ public abstract class BaseEvolutionaryTest  {
 	@Before
 	public void setUp() throws Exception {
 
-	
-		main = createMain();
+		MutationSupporter.cleanFactory();
 		
 		Logger.getLogger(StandardEnvironment.class).setLevel(Level.ERROR);
 		
 	}
 
-	public abstract AbstractMain createMain();
 	
 
 	public void createFileLogger(String file) throws IOException {
@@ -117,18 +114,6 @@ public abstract class BaseEvolutionaryTest  {
 		return cantSol;
 	}
 	
-	public void generic(
-			String location,
-			String folder,
-			String regression,
-			String failing, 
-			String dependenciespath,
-			String packageToInstrument, 
-			double thfl) throws Exception{};
-	
-	protected AbstractMain getMain(){
-		return this.main;
-	}
 	
 	
 }

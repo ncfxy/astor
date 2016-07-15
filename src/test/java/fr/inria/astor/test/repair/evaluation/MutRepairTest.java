@@ -3,11 +3,9 @@ package fr.inria.astor.test.repair.evaluation;
 import java.io.File;
 import java.util.Arrays;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import fr.inria.astor.core.setup.ConfigurationProperties;
-import fr.inria.main.AbstractMain;
 import fr.inria.main.evolution.AstorMain;
 /**
  * Test for MutRepair engine. (it mutates if conditions)
@@ -30,12 +28,15 @@ public class MutRepairTest extends BaseEvolutionaryTest {
 				"-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
 				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.1", 
 				"-stopfirst", "true",
-				"-maxtime", "10",
+				"-maxtime", "15",
 				"-seed","10"};
 		System.out.println(Arrays.toString(args));
 		main1.main(args);
 		validatePatchExistence(ConfigurationProperties.getProperty("workingDirectory")+File.separator+"AstorMain-math_85/");
 		
+		//location= org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils
+		//		line= 198
+		//		original statement= if ((fa * fb) >= 0.0) {
 	}
 	
 	
@@ -64,10 +65,6 @@ public class MutRepairTest extends BaseEvolutionaryTest {
 				+File.separator+"AstorMain-Math-issue-288/");
 	}
 	
-	@Override
-	public AbstractMain createMain() {
-		return  new AstorMain();
-	}
 
 
 

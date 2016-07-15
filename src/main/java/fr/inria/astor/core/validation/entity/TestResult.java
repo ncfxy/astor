@@ -10,7 +10,7 @@ import java.util.List;
 public class TestResult {
 	
 	public int casesExecuted = 0;
-	public int failures = -1;
+	public int failures = 0;
 	public List<String> successTest =new ArrayList<String>();
 	 
 	public  List<String> failTest =new ArrayList<String>();
@@ -37,8 +37,8 @@ public class TestResult {
 
 	@Override
 	public String toString() {
-		return "TR: Success: "+ failTest.isEmpty() + ", failTest= "
-				+ failures + ", was successful: "+this.wasSuccessful()+"] ,"+ this.failTest;
+		return "TR: Success: "+ (failures == 0) + ", failTest= "
+				+ failures + ", was successful: "+this.wasSuccessful()+", cases executed: "+casesExecuted+"] ,"+ this.failTest;
 	}
 
 	public int getFailureCount(){

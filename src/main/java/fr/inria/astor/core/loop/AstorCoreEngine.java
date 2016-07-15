@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.collections.map.HashedMap;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import com.martiansoftware.jsap.JSAPException;
@@ -23,7 +25,8 @@ import fr.inria.astor.core.entities.WeightCtElement;
 import fr.inria.astor.core.faultlocalization.IFaultLocalization;
 import fr.inria.astor.core.loop.population.PopulationController;
 import fr.inria.astor.core.loop.population.ProgramVariantFactory;
-import fr.inria.astor.core.loop.spaces.operators.RepairOperatorSpace;
+import fr.inria.astor.core.loop.spaces.operators.OperatorSelectionStrategy;
+import fr.inria.astor.core.loop.spaces.operators.OperatorSpace;
 import fr.inria.astor.core.manipulation.MutationSupporter;
 import fr.inria.astor.core.manipulation.bytecode.entities.CompilationResult;
 import fr.inria.astor.core.setup.ConfigurationProperties;
@@ -68,7 +71,9 @@ public abstract class AstorCoreEngine {
 
 	// SPACES
 
-	protected RepairOperatorSpace repairActionSpace = null;
+	protected OperatorSelectionStrategy operatorSelectionStrategy = null;
+	
+	protected OperatorSpace operatorSpace = null;
 
 	protected PopulationController populationControler = null;
 
@@ -97,6 +102,8 @@ public abstract class AstorCoreEngine {
 	public void startEvolution() throws Exception {
 
 		log.info("\n----Starting Solution Search");
+		//LogManager.getRootLogger().setLevel(Level.DEBUG);
+		
 
 		generationsExecuted = 0;
 		boolean stop = false;
@@ -232,7 +239,7 @@ public abstract class AstorCoreEngine {
 
 			// Finally, reverse the changes done by the child
 			reverseOperationInModel(newVariant, generation);
-			this.validateReversedOriginalVariant(newVariant);
+			boolean validation = this.validateReversedOriginalVariant(newVariant);
 			if (foundSolution && ConfigurationProperties.getPropertyBool("stopfirst")) {
 				break;
 			}
@@ -253,6 +260,7 @@ public abstract class AstorCoreEngine {
 		variant.getModifiedClasses().clear();
 		for (CtClass modifiedClass : variant.getBuiltClasses().values()) {
 			CtClass cloneModifClass = (CtClass) MutationSupporter.clone(modifiedClass);
+			cloneModifClass.setParent(modifiedClass.getParent());
 			variant.getModifiedClasses().add(cloneModifClass);
 		}
 
@@ -333,7 +341,7 @@ public abstract class AstorCoreEngine {
 
 	}
 
-	private void validateReversedOriginalVariant(ProgramVariant variant) {
+	private boolean validateReversedOriginalVariant(ProgramVariant variant) {
 
 		for (CtType st : variant.getAffectedClasses()) {
 			String original = originalModel.get(st.getQualifiedName());
@@ -341,10 +349,13 @@ public abstract class AstorCoreEngine {
 				boolean idem = original.equals(st.toString());
 				if (!idem) {
 					log.error("Error: the model was not the same from the original after this generation");
+					log.error("Undo Error: original: \n"+original);
+					log.error("Undo Error: modified: \n"+st.toString());
+					return false;
 				}
 			}
 		}
-
+		return true;
 	}
 
 	/**
@@ -502,7 +513,7 @@ public abstract class AstorCoreEngine {
 
 		// For each gen of the program instance
 		List<ModificationPoint> modificationPointsToProcess = getGenList(variant);
-		log.debug("modifPointsToProcess " + modificationPointsToProcess);
+		//log.debug("modifPointsToProcess " + modificationPointsToProcess);
 		for (ModificationPoint modificationPoint : modificationPointsToProcess) {
 			// tp refactor
 			modificationPoint.identified = variant.getModificationPoints().indexOf(modificationPoint);
@@ -792,12 +803,12 @@ public abstract class AstorCoreEngine {
 		return false;
 	}
 
-	public RepairOperatorSpace getRepairActionSpace() {
-		return repairActionSpace;
+	public OperatorSelectionStrategy getOperatorSelectionStrategy() {
+		return operatorSelectionStrategy;
 	}
 
-	public void setRepairActionSpace(RepairOperatorSpace repairSpace) {
-		this.repairActionSpace = repairSpace;
+	public void setOperatorSelectionStrategy(OperatorSelectionStrategy operatorSelectionStrategy) {
+		this.operatorSelectionStrategy = operatorSelectionStrategy;
 	}
 
 	public List<ProgramVariant> getVariants() {
@@ -885,33 +896,12 @@ public abstract class AstorCoreEngine {
 					line += "\ngeneration= " + Integer.toString(i);
 					line += "\ningredientScope= " + ((genOperationInstance.getIngredientScope() != null)
 							? genOperationInstance.getIngredientScope() : "-");
-					/*
-					 * if (getFixSpace() != null) { // Ingredients space size
-					 * List<?> ingredients = null; //todo opflex if
-					 * (genOperationInstance.getOperationApplied().equals(
-					 * GenProgMutationOperation.REPLACE)) { ingredients =
-					 * getFixSpace().getFixSpace(genOperationInstance.
-					 * getOriginal(),
-					 * genOperationInstance.getOriginal().getClass().
-					 * getSimpleName()); } if
-					 * (genOperationInstance.getOperationApplied().equals(
-					 * GenProgMutationOperation.INSERT_AFTER) ||
-					 * genOperationInstance.getOperationApplied()
-					 * .equals(GenProgMutationOperation.INSERT_BEFORE)) {
-					 * ingredients =
-					 * getFixSpace().getFixSpace(genOperationInstance.
-					 * getOriginal());
-					 * 
-					 * } if (ingredients != null) { line += "\ningredients= " +
-					 * ingredients.size(); }
-					 * 
-					 * }
-					 */
-					line += "\n ";
+					
+					//line += "\n ";
 
 				}
 			}
-
+			line +="\nvalidation="+solutionVariant.getValidationResult().toString();
 		}
 		return line;
 	}
@@ -930,6 +920,14 @@ public abstract class AstorCoreEngine {
 
 	public ProjectRepairFacade getProjectFacade() {
 		return projectFacade;
+	}
+
+	public OperatorSpace getOperatorSpace() {
+		return operatorSpace;
+	}
+
+	public void setOperatorSpace(OperatorSpace operatorSpace) {
+		this.operatorSpace = operatorSpace;
 	}
 
 }

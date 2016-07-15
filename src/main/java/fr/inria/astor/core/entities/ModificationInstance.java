@@ -2,7 +2,7 @@ package fr.inria.astor.core.entities;
 
 import org.apache.log4j.Logger;
 
-import fr.inria.astor.core.loop.spaces.ingredients.IngredientSpaceScope;
+import fr.inria.astor.core.loop.spaces.ingredients.scopes.IngredientSpaceScope;
 import fr.inria.astor.core.loop.spaces.operators.AstorOperator;
 import fr.inria.astor.util.StringUtil;
 import spoon.reflect.code.CtBlock;
@@ -56,12 +56,20 @@ public class ModificationInstance {
 	
 	public ModificationInstance (){}
 	
+	/**
+	 * Creates a modification instance 
+	 * @param modificationPoint
+	 * @param operationApplied
+	 * @param original
+	 * @param modified
+	 */
 	public ModificationInstance(ModificationPoint modificationPoint, AstorOperator operationApplied, CtElement original, CtElement modified) {
 		super();
 		this.modificationPoint = modificationPoint;
 		this.operator = operationApplied;
 		this.original = original;
-		this.modified = modified;		
+		this.modified = modified;
+		this.defineParentInformation(modificationPoint);
 	}
 
 	public CtElement getOriginal() {
@@ -198,18 +206,22 @@ public class ModificationInstance {
 		operator.updateProgramVariant(this, this.getModificationPoint().getProgramVariant());
 	}
 	
-	public void defineParentInformation(ModificationPoint genSusp) {
+	public boolean defineParentInformation(ModificationPoint genSusp) {
 		CtElement targetStmt = genSusp.getCodeElement();
 		CtElement cparent = targetStmt.getParent();
 		if ((cparent != null && (cparent instanceof CtBlock))) {
 			CtBlock parentBlock = (CtBlock) cparent;
-			this.setParentBlock(parentBlock);
 			int location = locationInParent(parentBlock, targetStmt);
-			this.setLocationInParent(location);
+			if(location >= 0){
+				this.setParentBlock(parentBlock);
+				this.setLocationInParent(location);
+				return true;
+			}
 
 		} else {
 			log.error("Parent different to block");
 		}
+		return false;
 	}
 		
 		/**

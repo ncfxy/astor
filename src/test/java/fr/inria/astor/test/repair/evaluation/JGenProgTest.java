@@ -5,26 +5,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
-import fr.inria.astor.approaches.jgenprog.operators.InsertAfterOp;
-import fr.inria.astor.approaches.jgenprog.operators.RemoveOp;
-import fr.inria.astor.approaches.jgenprog.operators.ReplaceOp;
 import fr.inria.astor.core.entities.ModificationInstance;
 import fr.inria.astor.core.entities.ProgramVariant;
-import fr.inria.astor.core.loop.spaces.ingredients.BasicIngredientStrategy;
-import fr.inria.astor.core.loop.spaces.ingredients.IngredientSpaceScope;
+import fr.inria.astor.core.loop.spaces.ingredients.scopes.IngredientSpaceScope;
 import fr.inria.astor.core.manipulation.MutationSupporter;
 import fr.inria.astor.core.setup.ConfigurationProperties;
-import fr.inria.astor.test.repair.evaluation.other.FakeIngredientStrategy;
-import fr.inria.main.AbstractMain;
 import fr.inria.main.evolution.AstorMain;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtType;
@@ -43,21 +37,6 @@ public class JGenProgTest extends BaseEvolutionaryTest {
 		out = new File(ConfigurationProperties.getProperty("workingDirectory"));
 	}
 
-	@Override
-	public void generic(String location, String folder, String regression, String failing, String dependenciespath,
-			String packageToInstrument, double thfl) throws Exception {
-
-		getMain().run(location, folder, dependenciespath, packageToInstrument, thfl, failing);
-
-	}
-
-	@Override
-	public AbstractMain createMain() {
-		if (main == null) {
-			return new AstorMain();
-		}
-		return main;
-	}
 
 	@Test
 	public void testExample280CommandLine() throws Exception {
@@ -141,7 +120,8 @@ public class JGenProgTest extends BaseEvolutionaryTest {
 		assertTrue(solutions.size() > 0);
 		assertEquals(1, solutions.size());
 		ProgramVariant variant = solutions.get(0);
-
+		assertTrue(variant.getValidationResult().isRegressionExecuted());
+		
 		validatePatchExistence(out + File.separator + "AstorMain-math_70/", solutions.size());
 
 		ModificationInstance mi = variant.getOperations().values().iterator().next().get(0);
@@ -214,183 +194,14 @@ public class JGenProgTest extends BaseEvolutionaryTest {
 	}
 
 	/**
-	 * We pass as custom operator one that was already included in astor (it is
-	 * included in the classpath).
-	 * 
-	 * @throws Exception
-	 */
-	@Test
-	public void testMath85CustomOperator() throws Exception {
-		AstorMain main1 = new AstorMain();
-		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
-		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
-				"org.apache.commons.math.distribution.NormalDistributionTest", "-location",
-				new File("./examples/math_85").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
-				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
-				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-stopfirst", "false",
-				"-maxgen", "100", "-scope", "package", "-seed", "10", "-customop", RemoveOp.class.getCanonicalName() };
-		System.out.println(Arrays.toString(args));
-		main1.execute(args);
-		// validatePatchExistence(out + File.separator + "AstorMain-math_85/");
-		List<ProgramVariant> solutions = main1.getEngine().getSolutions();
-		assertTrue(solutions.size() > 0);
-		// The space must have only ONE operator
-		assertEquals(1, main1.getEngine().getRepairActionSpace().size());
-		assertEquals(RemoveOp.class.getSimpleName(),
-				main1.getEngine().getRepairActionSpace().values()[0].getClass().getSimpleName());
-
-	}
-
-	/**
-	 * We pass as custom operator that it does not exist
-	 * 
-	 * @throws Exception
-	 */
-	@Test
-	public void testMath85AnyCustomOperator() throws Exception {
-		AstorMain main1 = new AstorMain();
-		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
-		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
-				"org.apache.commons.math.distribution.NormalDistributionTest", "-location",
-				new File("./examples/math_85").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
-				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
-				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-stopfirst", "false",
-				"-maxgen", "100", "-scope", "package", "-seed", "10", "-customop", "MyoPeratorInvented1" };
-		System.out.println(Arrays.toString(args));
-		try {
-			main1.execute(args);
-			fail("Astor cannot work without operators");
-		} catch (Exception e) {// Expected
-		}
-	}
-
-	/**
-	 * We pass as custom operator one that was already included in astor (it is
-	 * included in the classpath) but it does not repair the bug
-	 * 
-	 * @throws Exception
-	 */
-	@Test
-	public void testMath85_Custom_Operator_NoFix() throws Exception {
-		AstorMain main1 = new AstorMain();
-		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
-		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
-				"org.apache.commons.math.distribution.NormalDistributionTest", "-location",
-				new File("./examples/math_85").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
-				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
-				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-stopfirst", "false",
-				"-maxgen", "100", "-scope", "package", "-seed", "10", "-customop", ReplaceOp.class.getCanonicalName() };
-		System.out.println(Arrays.toString(args));
-		main1.execute(args);
-		// The space must have only ONE operator
-		assertEquals(1, main1.getEngine().getRepairActionSpace().size());
-		assertEquals(ReplaceOp.class.getSimpleName(),
-				main1.getEngine().getRepairActionSpace().values()[0].getClass().getSimpleName());
-
-		validatePatchExistence(out + File.separator + "AstorMain-math_85/", 0);
-		List<ProgramVariant> solutions = main1.getEngine().getSolutions();
-		assertTrue(solutions.size() == 0);
-
-	}
-
-	/**
-	 * Two custom operators, one repair the bug.
-	 * 
-	 * @throws Exception
-	 */
-	@Test
-	public void testMath85TwoCustomOperators() throws Exception {
-		AstorMain main1 = new AstorMain();
-		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
-		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
-				"org.apache.commons.math.distribution.NormalDistributionTest", "-location",
-				new File("./examples/math_85").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
-				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
-				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-stopfirst", "false",
-				"-maxgen", "100", "-scope", "package", "-seed", "10", "-customop",
-				(InsertAfterOp.class.getCanonicalName() + File.pathSeparator + RemoveOp.class.getCanonicalName()) };
-		System.out.println(Arrays.toString(args));
-		main1.execute(args);
-		// The space must have Two operators
-		assertEquals(2, main1.getEngine().getRepairActionSpace().size());
-		assertEquals(InsertAfterOp.class.getSimpleName(),
-				main1.getEngine().getRepairActionSpace().values()[0].getClass().getSimpleName());
-		assertEquals(RemoveOp.class.getSimpleName(),
-				main1.getEngine().getRepairActionSpace().values()[1].getClass().getSimpleName());
-
-		validatePatchExistence(out + File.separator + "AstorMain-math_85/");
-		List<ProgramVariant> solutions = main1.getEngine().getSolutions();
-		assertTrue(solutions.size() > 0);
-
-	}
-
-	@Test
-	public void testMath85_CustomBasicIngredientStrategy() throws Exception {
-		AstorMain main1 = new AstorMain();
-		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
-		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
-				"org.apache.commons.math.distribution.NormalDistributionTest", "-location",
-				new File("./examples/math_85").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
-				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
-				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-stopfirst", "false",
-				"-maxgen", "100", "-scope", "package", "-seed", "10", "-ingredientstrategy",
-				BasicIngredientStrategy.class.getCanonicalName() };
-		System.out.println(Arrays.toString(args));
-		main1.execute(args);
-		validatePatchExistence(out + File.separator + "AstorMain-math_85/");
-		List<ProgramVariant> solutions = main1.getEngine().getSolutions();
-		assertTrue(solutions.size() > 0);
-
-	}
-
-	@Test
-	public void testMath85_AnyIngredientStrategy() throws Exception {
-		AstorMain main1 = new AstorMain();
-		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
-		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
-				"org.apache.commons.math.distribution.NormalDistributionTest", "-location",
-				new File("./examples/math_85").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
-				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
-				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-stopfirst", "false",
-				"-maxgen", "100", "-scope", "package", "-seed", "10", "-ingredientstrategy",
-				"DoneToFailIngredientStrat10" };
-		System.out.println(Arrays.toString(args));
-		try {
-			main1.execute(args);
-			fail();
-		} catch (Exception e) {// Expected
-		}
-	}
-
-	@SuppressWarnings("rawtypes")
-	@Test
-	// @Ignore
-	public void testMath70WithFakeIngStrategy() throws Exception {
-		AstorMain main1 = new AstorMain();
-		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
-		File out = new File(ConfigurationProperties.getProperty("workingDirectory"));
-		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
-				"org.apache.commons.math.analysis.solvers.BisectionSolverTest", "-location",
-				new File("./examples/math_70").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
-				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
-				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-out",
-				out.getAbsolutePath(), "-scope", "package", "-seed", "10", "-maxgen", "50", "-ingredientstrategy",
-				FakeIngredientStrategy.class.getCanonicalName() };
-		System.out.println(Arrays.toString(args));
-		main1.execute(args);
-
-		List<ProgramVariant> solutions = main1.getEngine().getSolutions();
-		assertTrue(solutions.isEmpty());
-
-	}
-	/**
-	 * Testing injected but at CharacterReader line 118, commit version 31be24.
+	 * Testing injected bug at CharacterReader line 118, commit version 31be24.
 	 * "org.jsoup.nodes.AttributesTest"+File.pathSeparator+"org.jsoup.nodes.DocumentTypeTest"
 						+File.pathSeparator+"org.jsoup.nodes.NodeTest"+File.pathSeparator+"org.jsoup.parser.HtmlParserTest"
 				
 	 * @throws Exception
 	 */
 	@Test
+	@Ignore
 	public void testJSoupParser31be24() throws Exception {
 		String dep = new File("./examples/libs/junit-4.5.jar").getAbsolutePath();
 		AstorMain main1 = new AstorMain();
@@ -411,12 +222,131 @@ public class JGenProgTest extends BaseEvolutionaryTest {
 				//
 				"-scope", "local",
 				"-seed", "10", 
-				"-maxtime", "100" };
+				"-maxtime", "100",
+				"-population","1",
+				"-maxgen","250",
+				"-saveall","true"
+				};
 		main1.execute(args);
 
 		List<ProgramVariant> solutions = main1.getEngine().getSolutions();
-		assertFalse(solutions.isEmpty());
-
+		assertEquals(1,solutions.size());
+		//TODO: Problem printing CtThisAccess
+		//pos += offset
+		//time(sec)= 30
+		//operation: ReplaceOp
+		//	location= org.jsoup.parser.CharacterReader
+		//	line= 118
+		//	original statement= pos -= offset
+		//	fixed statement= pos += offset
+		//generation= 26	
 	}
+	
+	@SuppressWarnings("rawtypes")
+	@Test
+	public void testMath50Remove() throws Exception {
+		AstorMain main1 = new AstorMain();
+		String dep = new File("./examples/libs/junit-4.8.2.jar").getAbsolutePath();
+		File out = new File(ConfigurationProperties.getProperty("workingDirectory"));
+		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
+				"org.apache.commons.math.analysis.solvers.RegulaFalsiSolverTest", "-location",
+				new File("./examples/math_50").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
+				"/src/main/java/", "-srctestfolder", "/src/test/java", "-binjavafolder", "/target/classes", "-bintestfolder",
+				"/target/test-classes", "-javacompliancelevel", "5", "-flthreshold", "0.1", "-out",
+				out.getAbsolutePath(), "-scope", "local", "-seed", "10", "-maxgen", "50", "-stopfirst", "true",
+				"-maxtime", "100",
+				"-ignoredtestcases","org.apache.commons.math.util.FastMathTest"
+		};
+		System.out.println(Arrays.toString(args));
+		main1.execute(args);
 
+		List<ProgramVariant> solutions = main1.getEngine().getSolutions();
+		assertTrue(solutions.size() > 0);
+		assertEquals(1, solutions.size());
+		ProgramVariant variant = solutions.get(0);
+		assertTrue(variant.getValidationResult().isRegressionExecuted());
+		
+	}
+	
+	@SuppressWarnings("rawtypes")
+	@Test
+	@Ignore
+	public void testMath76() throws Exception {
+		AstorMain main1 = new AstorMain();
+		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
+		File out = new File(ConfigurationProperties.getProperty("workingDirectory"));
+		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
+				"org.apache.commons.math.linear.SingularValueSolverTest", "-location",
+				new File("./examples/math_76").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
+				"/src/main/java/", "-srctestfolder", "/src/test/java", "-binjavafolder", "/target/classes", "-bintestfolder",
+				"/target/test-classes", "-javacompliancelevel", "5", "-flthreshold", "0.5", 
+				"-out",
+				out.getAbsolutePath(), "-scope", "local", "-seed", "6010", "-maxgen", "50", "-stopfirst", "true",
+				"-maxtime", "2",
+					
+		};
+		System.out.println(Arrays.toString(args));
+		main1.execute(args);
+
+		List<ProgramVariant> solutions = main1.getEngine().getSolutions();
+		assertTrue(solutions.isEmpty());
+
+		
+	}
+	
+	@SuppressWarnings("rawtypes")
+	@Test
+	public void testMath74() throws Exception {
+		AstorMain main1 = new AstorMain();
+		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
+		File out = new File(ConfigurationProperties.getProperty("workingDirectory"));
+		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
+				"org.apache.commons.math.ode.nonstiff.AdamsMoultonIntegratorTest", "-location",
+				new File("./examples/math_74").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
+				"/src/main/java/", "-srctestfolder", "/src/test/java", "-binjavafolder", "/target/classes", "-bintestfolder",
+				"/target/test-classes", "-javacompliancelevel", "5", "-flthreshold", "0.5", 
+				"-out",
+				out.getAbsolutePath(), "-scope", "local", "-seed", "10", "-maxgen", "50", "-stopfirst", "true",
+				"-maxtime", "2",
+					
+		};
+		System.out.println(Arrays.toString(args));
+		main1.execute(args);
+
+		List<ProgramVariant> solutions = main1.getEngine().getSolutions();
+		assertTrue(solutions.isEmpty());
+		
+		
+	}
+	
+	@SuppressWarnings("rawtypes")
+	@Test
+	public void testMath106UndoException() throws Exception {
+		AstorMain main1 = new AstorMain();
+		String dep = new File("./examples/libs/commons-discovery-0.2.jar").getAbsolutePath()+File.pathSeparator
+				+new File("./examples/libs/commons-logging-1.0.4.jar").getAbsolutePath()+File.pathSeparator
+				+new File("./examples/libs/junit-3.8.2.jar").getAbsolutePath();
+		File out = new File(ConfigurationProperties.getProperty("workingDirectory"));
+		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
+				"org.apache.commons.math.fraction.FractionFormatTest", "-location",
+				new File("./examples/math_106").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
+				"/src/main/java/", "-srctestfolder", "/src/test/java", "-binjavafolder", "/target/classes", "-bintestfolder",
+				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", 
+				"-out",
+				out.getAbsolutePath(), "-scope", "local", "-seed", "6010", "-maxgen", "50", "-stopfirst", "true",
+				"-maxtime", "30",
+					
+		};
+		System.out.println(Arrays.toString(args));
+		main1.execute(args);
+
+		List<ProgramVariant> solutions = main1.getEngine().getSolutions();
+		assertTrue(solutions.isEmpty());
+
+		
+	}
+	
+	
+
+	
 }

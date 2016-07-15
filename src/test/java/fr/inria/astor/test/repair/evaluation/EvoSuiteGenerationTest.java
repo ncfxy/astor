@@ -1,9 +1,10 @@
 package fr.inria.astor.test.repair.evaluation;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -15,6 +16,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import fr.inria.astor.core.entities.ProgramVariant;
@@ -24,9 +27,9 @@ import fr.inria.astor.core.manipulation.bytecode.entities.CompilationResult;
 import fr.inria.astor.core.setup.ConfigurationProperties;
 import fr.inria.astor.core.validation.validators.EvoSuiteValidationResult;
 import fr.inria.astor.core.validation.validators.ProcessEvoSuiteValidator;
+import fr.inria.astor.core.validation.validators.RegressionValidation;
 import fr.inria.astor.util.Converters;
 import fr.inria.astor.util.EvoSuiteFacade;
-import fr.inria.main.AbstractMain;
 import fr.inria.main.evolution.AstorMain;
 import spoon.reflect.declaration.CtClass;
 
@@ -37,6 +40,19 @@ import spoon.reflect.declaration.CtClass;
  */
 public class EvoSuiteGenerationTest extends BaseEvolutionaryTest {
 
+	@Before
+	public void setUp() throws Exception{
+		super.setUp();
+		// For running the test cases, We use the JVM that runs Astor
+		String javahome = System.getProperty("java.home");
+		File location = new File(javahome);
+		javahome = location.getParent() + File.separator + "bin";
+		// We set up the JVM that runs test
+		ConfigurationProperties.properties.setProperty("jvm4testexecution", javahome);
+		ConfigurationProperties.properties.setProperty("jvm4evosuitetestexecution", javahome);
+	}
+	
+	
 	@SuppressWarnings("rawtypes")
 	@Test
 	public void testGenerateEvosuiteTestsStepByStep() throws Exception {
@@ -155,7 +171,7 @@ public class EvoSuiteGenerationTest extends BaseEvolutionaryTest {
 				new File("./examples/math_70").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
 				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
 				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-out",
-				out.getAbsolutePath(), "-scope", "package", "-seed", "10",
+				out.getAbsolutePath(), "-scope", "package", "-seed", "0",
 				// We force to not execute the evolution, so, we run it for zero
 				// generation
 				"-maxgen", "0", "-population", "1", "-stopfirst", "true", "-maxtime", "100"
@@ -201,17 +217,17 @@ public class EvoSuiteGenerationTest extends BaseEvolutionaryTest {
 				new File("./examples/math_70").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
 				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
 				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-out",
-				out.getAbsolutePath(), "-scope", "package", "-seed", "10",
+				out.getAbsolutePath(), "-scope", "package", "-seed", "0",
 				"-stopfirst", "true",
 				"-population", 
 				"1", "-stopfirst", "true", "-maxtime", "100",
-				"-validation","evosuite"
+				"-validation","evosuite","-maxgen","250"
 
 		};
 		System.out.println(Arrays.toString(args));
 		main1.execute(args);
 		//One solution
-		assertFalse(main1.getEngine().getSolutions().isEmpty());
+		assertEquals(1,main1.getEngine().getSolutions().size());
 	
 		
 	}
@@ -227,15 +243,8 @@ public class EvoSuiteGenerationTest extends BaseEvolutionaryTest {
 	@Test
 	public void testCompileSaveAndRunEvoSuiteTestStepByStep() throws Exception {
 
-		// For running the test cases, We use the JVM that runs Astor
-		String javahome = System.getProperty("java.home");
-		File location = new File(javahome);
-		javahome = location.getParent() + File.separator + "bin";
-		// We set up the JVM that runs test
-		ConfigurationProperties.properties.setProperty("jvm4testexecution", javahome);
-
 		MutationSupporter.currentSupporter = new MutationSupporter();
-
+	
 		// Classpath to build a Spoon Model
 		String classpath4BuildModel = new File("./examples/libs/junit-4.4.jar").getAbsolutePath() + File.pathSeparator
 				+ new File("./examples/evo_suite_test/math_70_spooned//bin//default").getAbsolutePath()
@@ -250,7 +259,7 @@ public class EvoSuiteGenerationTest extends BaseEvolutionaryTest {
 				new File("./examples/evo_suite_test/math_70_spooned/evosuite/evosuite-tests")
 						.getAbsolutePath(),
 				classpath4BuildModel.split(File.pathSeparator));
-
+		
 		// Two classes: EvoTest + EvoScaffolding
 		assertEquals("We do not have 2 classes generated", 2, classes.size());
 
@@ -326,7 +335,7 @@ public class EvoSuiteGenerationTest extends BaseEvolutionaryTest {
 				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
 				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-out",
 				out.getAbsolutePath(), "-scope", "package", "-seed", "10",
-				"-maxgen", "200", "-population", "1", "-stopfirst", "true", "-maxtime", "100",
+				"-maxgen", "250", "-population", "1", "-stopfirst", "true", "-maxtime", "100",
 				//PARAMETER TO TEST
 				"-validation", "evosuite"
 
@@ -393,10 +402,259 @@ public class EvoSuiteGenerationTest extends BaseEvolutionaryTest {
 		}
 	}
 
-	@Override
-	public AbstractMain createMain() {
+	
+	@SuppressWarnings("rawtypes")
+	//@Test
+	public void testMath70RegressionTests() throws Exception {
+		AstorMain main1 = new AstorMain();
 
-		return null;
+		// Running Astor
+		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
+		File out = new File(ConfigurationProperties.getProperty("workingDirectory"));
+		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
+				"org.apache.commons.math.analysis.solvers.BisectionSolverTest", "-location",
+				new File("./examples/math_70").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
+				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
+				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-out",
+				out.getAbsolutePath(), "-scope", "package", "-seed", "0",
+				"-maxgen", "250", "-population", "1", "-stopfirst", "true", "-maxtime", "100",
+				//PARAMETER TO TEST
+				"-validation", RegressionValidation.class.getCanonicalName()
+
+		};
+		System.out.println(Arrays.toString(args));
+
+		main1.execute(args);
+
+		assertEquals(1, main1.getEngine().getSolutions().size());
+		//Patch info
+		//time(sec)= 546
+		//operation: ReplaceOp
+		//location= org.apache.commons.math.analysis.solvers.BisectionSolver
+		//line= 72
+		//original statement= return solve(min, max)
+		//fixed statement= return solve(f, min, max)
+		//generation= 240
+
+		ProgramVariant variantSolution = main1.getEngine().getSolutions().get(0);
+		ProgramVariantValidationResult validationResult = variantSolution.getValidationResult();
+		
+		assertNotNull("Without validation",validationResult);
+		//As we execute jgp in evosuite validation mode, we expect eSvalidationResult
+		assertTrue(validationResult instanceof EvoSuiteValidationResult);
+		EvoSuiteValidationResult esvalidationresult = (EvoSuiteValidationResult) validationResult;
+		//The main validation must be true (due it is a solution)
+		assertTrue(esvalidationresult.wasSuccessful());
+		//Now, the extended validation must fail
+		//assertFalse(esvalidationresult.getEvoValidation().wasSuccessful());
+		//log.info(esvalidationresult);
 	}
 
+	@Test
+	public void testValidationWrongArgumentValue() throws Exception {
+		AstorMain main1 = new AstorMain();
+		try{
+		// Running Astor
+		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
+		File out = new File(ConfigurationProperties.getProperty("workingDirectory"));
+		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
+				"org.apache.commons.math.analysis.solvers.BisectionSolverTest", "-location",
+				new File("./examples/math_70").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
+				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
+				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-out",
+				out.getAbsolutePath(), "-scope", "package", "-seed", "10",
+				"-maxgen", "200", "-population", "1", "-stopfirst", "true", "-maxtime", "100",
+				//PARAMETER TO TEST
+				"-validation", "wrongargument"
+
+		};
+		
+		main1.execute(args);
+		fail();
+		}catch(Exception e){}
+	}
+
+	@Test
+	public void testM70() throws Exception{
+		String command = "-mode,statement,"
+				//+ "-location,"+ (new File(".")).getAbsolutePath()
+				
+					+ "-location,"+ (new File("./examples/math_70")).getAbsolutePath()
+				+ ","+ "-dependencies,"+new File("./examples/libs/junit-4.11.jar").getAbsolutePath()
+				//+ ","
+				+ ",out,"+new File(ConfigurationProperties.getProperty("workingDirectory"))
+				//+ "-dependencies,"+(new File("./examples/libs/")).getAbsolutePath()
+				+ ",-failing,org.apache.commons.math.analysis.solvers.BisectionSolverTest,"
+				+ "-package,org.apache.commons,"
+				//+ "-jvm4testexecution,/home/mmartinez/jdk1.8.0_45/bin/"
+				+ "-javacompliancelevel,7,"
+				+ "-maxgen,1000000,"
+				+ "-seed,6001,"
+				+ "-stopfirst,true,"
+				+ "-scope,package,-maxtime,10,"
+				+ "-population,1,"
+				+ "-srcjavafolder,src/java/,"
+				+ "-srctestfolder,src/test/,-binjavafolder,target/classes/,"
+				+ "-bintestfolder,target/test-classes/,"
+				+ "-flthreshold,0.1,"
+				//+ " -validation,fr.inria.astor.core.validation.validators.RegressionValidation,"
+				;
+		String[] args = command.split(",");
+		AstorMain main1 = new AstorMain();
+		main1.execute(args);
+	}
+	
+	//@Test
+	public void testM50() throws Exception{
+		String command = "-mode,statement,"
+					+ "-location,"+ (new File("./examples/math_50")).getAbsolutePath()
+				+ ","+ "-dependencies,"+new File("./examples/libs/junit-4.8.2.jar").getAbsolutePath()
+				+ ",out,"+new File(ConfigurationProperties.getProperty("workingDirectory"))
+				+ ",-failing,org.apache.commons.math.analysis.solvers.BaseSecantSolver,"
+				+ "-package,org.apache.commons,"
+				//+ "-jvm4testexecution,/home/mmartinez/jdk1.8.0_45/bin/"
+				+ "-javacompliancelevel,7,"
+				+ "-maxgen,1000000,"
+				+ "-seed,6001,"
+				+ "-stopfirst,true,"
+				+ "-scope,package,-maxtime,10,"
+				+ "-population,1,"
+				+ "-srcjavafolder,src/java/,"
+				+ "-srctestfolder,src/test/,-binjavafolder,target/classes/,"
+				+ "-bintestfolder,target/test-classes/,"
+				+ "-flthreshold,0.1,"
+				//+ " -validation,fr.inria.astor.core.validation.validators.RegressionValidation,"
+				;
+		String[] args = command.split(",");
+		AstorMain main1 = new AstorMain();
+		main1.execute(args);
+	}
+	
+	@Test
+	@Ignore //It takes long to run evosuite for all susp class
+	public void testMath74() throws Exception {
+		AstorMain main1 = new AstorMain();
+		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
+		File out = new File(ConfigurationProperties.getProperty("workingDirectory"));
+		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
+				"org.apache.commons.math.ode.nonstiff.AdamsMoultonIntegratorTest", "-location",
+				new File("./examples/math_74").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
+				"/src/main/java/", "-srctestfolder", "/src/test/java", "-binjavafolder", "/target/classes", "-bintestfolder",
+				"/target/test-classes", "-javacompliancelevel", "5", "-flthreshold", "0.1", 
+				"-out",
+				out.getAbsolutePath(), "-scope", "local", "-seed", "6010", 
+				//Forced
+				"-maxgen", "0", "-stopfirst", "true",
+				"-maxtime", "100",
+				"-population", "1",
+				//PARAMETER TO TEST
+				"-validation", RegressionValidation.class.getCanonicalName()
+					
+		};
+		main1.execute(args);
+
+		assertTrue(main1.getEngine().getSolutions().size() == 0);
+
+		assertEquals(1, main1.getEngine().getVariants().size());
+
+		ProgramVariant variant = main1.getEngine().getVariants().get(0);
+
+		log.info("Executing evosuite for Math-74");
+		EvoSuiteFacade fev = new EvoSuiteFacade();
+		
+		List<CtClass> classes = fev.createEvoTestModel(main1.getEngine().getProjectFacade(), variant);
+	
+		// Two classes: EvoTest + EvoScaffolding
+		//assertEquals("We do not have 2 spoon classes generated", 2, classes.size());
+
+		assertFalse(main1.getEngine().getMutatorSupporter().getTestClasses().contains(classes.get(0)));
+
+		ProgramVariantValidationResult result = fev.saveAndExecuteEvoSuite(main1.getEngine().getProjectFacade(), variant, classes);
+	
+		log.debug(result);
+		
+		assertNotNull(result);
+		
+		assertTrue(result.wasSuccessful());
+		
+		
+		
+		
+	}
+	
+	
+	@Test
+	public void testM70_lsdse() throws Exception{
+		AstorMain main1 = new AstorMain();
+
+		// Running Astor
+		String dep = new File("./examples/libs/junit-4.4.jar").getAbsolutePath();
+		File out = new File(ConfigurationProperties.getProperty("workingDirectory"));
+		String[] args = new String[] { "-dependencies", dep, "-mode", "statement", "-failing",
+				"org.apache.commons.math.analysis.solvers.BisectionSolverTest", "-location",
+				new File("./examples/math_70").getAbsolutePath(), "-package", "org.apache.commons", "-srcjavafolder",
+				"/src/java/", "-srctestfolder", "/src/test/", "-binjavafolder", "/target/classes", "-bintestfolder",
+				"/target/test-classes", "-javacompliancelevel", "7", "-flthreshold", "0.5", "-out",
+				out.getAbsolutePath(), "-scope", "package", "-seed", "10",
+				"-maxgen", "250", "-population", "1", "-stopfirst", "true", "-maxtime", "100",
+				//PARAMETER TO TEST
+				"-validation", "evosuite"
+
+		};
+	
+		ConfigurationProperties.properties.setProperty("evoDSE", "true");
+		
+		main1.execute(args);
+
+		assertEquals(1, main1.getEngine().getSolutions().size());
+
+		
+		ProgramVariant variantSolutionDSE = main1.getEngine().getSolutions().get(0);
+		ProgramVariantValidationResult validationResultDSE = variantSolutionDSE.getValidationResult();
+	
+		
+		assertNotNull("Without validation",validationResultDSE);
+		//As we execute jgp in evosuite validation mode, we expect eSvalidationResult
+		assertTrue(validationResultDSE instanceof EvoSuiteValidationResult);
+		EvoSuiteValidationResult esvalidationresultDSE = (EvoSuiteValidationResult) validationResultDSE;
+		//The main validation must be true (due it is a solution)
+		assertTrue(esvalidationresultDSE.wasSuccessful());
+		//Now, the extended validation must fail
+		assertFalse(esvalidationresultDSE.getEvoValidation().wasSuccessful());
+		
+		//Results ES-DSE: evo_regression: |false|3|21|[test07(org.apache.commons.math.analysis.solvers.BisectionSolver_ESTest): Expecting exception: NullPointerException-, test18(org.apache.commons.math.analysis.solvers.BisectionSolver_ESTest): endpoints do not specify an interval: 4, 369.837, 4, 369.837-, test06(org.apache.commons.math.analysis.solvers.BisectionSolver_ESTest): Exception was not thrown in org.apache.commons.math.analysis.solvers.BisectionSolver but in org.apache.commons.math.MathRuntimeException.createIllegalArgumentException(MathRuntimeException.java:305): org.evosuite.runtime.mock.java.lang.MockThrowable-]|
+
+		
+		//Now, we disactivate evoDSE.
+		
+		ConfigurationProperties.properties.setProperty("evoDSE", "false");
+		
+		main1.execute(args);
+
+		assertEquals(1, main1.getEngine().getSolutions().size());
+
+		//
+		ProgramVariant variantSolution = main1.getEngine().getSolutions().get(0);
+		ProgramVariantValidationResult validationResult = variantSolution.getValidationResult();
+		
+		assertNotNull("Without validation",validationResult);
+		//As we execute jgp in evosuite validation mode, we expect eSvalidationResult
+		assertTrue(validationResult instanceof EvoSuiteValidationResult);
+		EvoSuiteValidationResult esvalidationresult = (EvoSuiteValidationResult) validationResult;
+		//The main validation must be true (due it is a solution)
+		assertTrue(esvalidationresult.wasSuccessful());
+		//Now, the extended validation must fail
+		assertFalse(esvalidationresult.getEvoValidation().wasSuccessful());
+		
+		
+	//	assertNotEquals(esvalidationresult.getEvoValidation().getFailureCount(),
+	//			esvalidationresultDSE.getEvoValidation().getFailureCount());
+		
+		System.out.println("LS: "+esvalidationresult.getEvoValidation().getFailureCount()
+				+", DSE: "+esvalidationresultDSE.getEvoValidation().getFailureCount());
+		
+		//evo_regression (LS (NoDSE)): |false|5|22|[test01(org.apache.commons.math.analysis.solvers.BisectionSolver_ESTest): endpoints do not specify an interval: 1, 850, 0-, test00(org.apache.commons.math.analysis.solvers.BisectionSolver_ESTest): endpoints do not specify an interval: 1, 850, 0-, test07(org.apache.commons.math.analysis.solvers.BisectionSolver_ESTest): Expecting exception: NullPointerException-, test18(org.apache.commons.math.analysis.solvers.BisectionSolver_ESTest): endpoints do not specify an interval: 4, 369.837, 4, 369.837-, test06(org.apache.commons.math.analysis.solvers.BisectionSolver_ESTest): Expecting exception: Exception-]|
+
+		}
+	
 }

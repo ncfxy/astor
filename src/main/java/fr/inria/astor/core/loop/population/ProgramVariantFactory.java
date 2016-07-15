@@ -9,8 +9,8 @@ import org.apache.log4j.Logger;
 import com.martiansoftware.jsap.JSAPException;
 
 import fr.inria.astor.core.entities.ModificationPoint;
-import fr.inria.astor.core.entities.SuspiciousModificationPoint;
 import fr.inria.astor.core.entities.ProgramVariant;
+import fr.inria.astor.core.entities.SuspiciousModificationPoint;
 import fr.inria.astor.core.faultlocalization.bridgeFLSpoon.SpoonLocationPointerLauncher;
 import fr.inria.astor.core.faultlocalization.entity.SuspiciousCode;
 import fr.inria.astor.core.loop.spaces.ingredients.IngredientProcessor;
@@ -166,7 +166,7 @@ public class ProgramVariantFactory {
 
 			for (CtElement suspiciousElement : extractedElements) {
 
-				List<CtVariable> contextOfGen = VariableResolver.getVariablesFromBlockInScope(suspiciousElement);
+				List<CtVariable> contextOfGen = VariableResolver.searchVariablesInScope(suspiciousElement);
 
 				SuspiciousModificationPoint point = new SuspiciousModificationPoint();
 				point.setSuspicious(new SuspiciousCode(ctclasspointed.getQualifiedName(), "",
@@ -224,7 +224,7 @@ public class ProgramVariantFactory {
 		// We take the first element for getting the context (as the remaining
 		// have the same location, it's not necessary)
 
-		contextOfPoint = VariableResolver.getVariablesFromBlockInScope(ctSuspects.get(0));
+		contextOfPoint = VariableResolver.searchVariablesInScope(ctSuspects.get(0));
 
 		// From the suspicious CtElements, there are some of them we are
 		// interested in.
@@ -241,7 +241,7 @@ public class ProgramVariantFactory {
 			modifPoint.setCodeElement(ctElement);
 			modifPoint.setContextOfModificationPoint(contextOfPoint);
 			suspGen.add(modifPoint);
-			log.info("--ModifPoint:" + ctElement.getClass().getSimpleName() + ", suspValue "
+			log.debug("--ModifPoint:" + ctElement.getClass().getSimpleName() + ", suspValue "
 					+ suspiciousCode.getSuspiciousValue() + ", line " + ctElement.getPosition().getLine() + ", file "
 					+ ctElement.getPosition().getFile().getName());
 		}
