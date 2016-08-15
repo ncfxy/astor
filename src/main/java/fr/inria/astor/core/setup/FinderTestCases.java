@@ -30,7 +30,6 @@ public class FinderTestCases {
 			s+=tcr+File.pathSeparator;
 			tr.add(tcr);
 		}
-		//ConfigurationProperties.properties.setProperty("testcasesregression", s);
 		projectFacade.getProperties().setRegressionCases(tr);
 	}
 
@@ -73,6 +72,12 @@ public class FinderTestCases {
 			List<String> regressionCases = new ArrayList<String>();
 			List<String> ignoreTestcases = retriveIgnoreTestCases();
 			
+			log.debug("Ignored test cases: "+ignoreTestcases);
+			
+			if(ignoreTestcases.isEmpty())
+				return allTest;
+			
+			
 			for (String candidateTest : allTest) {
 			/*	CtType<?> type = MutationSupporter.getFactory().Type().get(candidateTest);
 				if (type != null && (!type.getModifiers().contains(ModifierKind.ABSTRACT))
@@ -103,7 +108,7 @@ public class FinderTestCases {
 
 	private static List<String> retriveIgnoreTestCases() {
 		String list = ConfigurationProperties.getProperty("ignoredTestCases");
-		String[] cases = list.split(";");
+		String[] cases = list.split(File.pathSeparator);
 		return 	Arrays.asList(cases);
 	}
 

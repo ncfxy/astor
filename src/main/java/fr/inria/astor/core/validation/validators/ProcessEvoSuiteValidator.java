@@ -5,6 +5,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
@@ -142,17 +143,20 @@ public class ProcessEvoSuiteValidator extends ProgramValidator {
 			log.debug("Tests were already generated "+generatedTest);
 		}
 
-	
+		
+		List<String> changed = currentVariant.computeAffectedClassesByOperatos().stream().
+				map(e -> e.getQualifiedName()).collect(Collectors.toList());
 
-		System.out.println("Generated test " + generatedTest);
-		// WE execute evo test from compiled
-		// Transform
+		log.debug("Generated tests: " + generatedTest);
+		log.debug("Classes Changed: "+changed);
+		
 		List<String> testToExecute = new ArrayList<>();
 		for (String f : generatedTest) {
-			String p = f.replace(".java", "").replace(esPath.toString(), "").replace("/evosuite-tests/", "")
+			String qualifiedTestName = f.replace(".java", "").replace(esPath.toString(), "").replace("/evosuite-tests/", "")
 					.replace(File.separator, ".");
-			if (!p.endsWith("ESTest_scaffolding")) {
-				testToExecute.add(p);
+			if (!qualifiedTestName.endsWith(EvoSuiteFacade.EVOSUITE_scaffolding_SUFFIX) 
+					&& changed.contains(qualifiedTestName.replace(EvoSuiteFacade.EVOSUITE_SUFFIX, ""))) {
+				testToExecute.add(qualifiedTestName);
 			}
 		}
 
@@ -167,13 +171,17 @@ public class ProcessEvoSuiteValidator extends ProgramValidator {
 
 	}
 
-
 	public TestCasesProgramValidationResult executeRegressionTesting(URL[] processClasspath,
 			List<String> testCasesRegression) {
+		boolean avoidInterrupt = true;
+		return executeRegressionTesting(processClasspath,testCasesRegression, avoidInterrupt);
+	}
+
+	public TestCasesProgramValidationResult executeRegressionTesting(URL[] processClasspath,
+			List<String> testCasesRegression, boolean avoidInterrupt) {
 		log.debug("Executing EvosuiteTest :" + testCasesRegression);
 		long t1 = System.currentTimeMillis();
 
-		boolean avoidInterrupt = true;
 		JUnitExecutorProcess process = new JUnitIndirectExecutorProcess(avoidInterrupt);
 
 		int time = 60000;
@@ -185,7 +193,9 @@ public class ProcessEvoSuiteValidator extends ProgramValidator {
 
 		if (trregression == null) {
 			currentStats.unfinishValidation++;
-			return null;
+			boolean error = true;
+			return new TestCasesProgramValidationResult(error);
+		
 		} else {
 			log.debug(trregression);
 			currentStats.numberOfTestcasesExecutedval2 += trregression.casesExecuted;
